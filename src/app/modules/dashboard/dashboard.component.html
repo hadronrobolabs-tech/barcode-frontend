@@ -1,0 +1,47 @@
+<div class="dashboard-container">
+  <h1 class="dashboard-title">Dashboard</h1>
+  <p class="dashboard-subtitle">Manage your barcode operations</p>
+
+  <div class="cards-grid">
+    <mat-card class="dashboard-card" routerLink="generate-qr">
+      <mat-card-content>
+        <div class="card-icon generate">
+          <mat-icon>qr_code_scanner</mat-icon>
+        </div>
+        <h2>Generate Barcode</h2>
+        <p>Create and download barcode labels for components and products</p>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="dashboard-card" routerLink="component-scan">
+      <mat-card-content>
+        <div class="card-icon scan">
+          <mat-icon>scanner</mat-icon>
+        </div>
+        <h2>Component Scan</h2>
+        <p>Scan and validate component barcodes</p>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="dashboard-card" routerLink="box-packing">
+      <mat-card-content>
+        <div class="card-icon packing">
+          <mat-icon>inventory_2</mat-icon>
+        </div>
+        <h2>Box Packing</h2>
+        <p>Pack kits with component verification</p>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="dashboard-card" routerLink="data-history">
+      <mat-card-content>
+        <div class="card-icon history">
+          <mat-icon>history</mat-icon>
+        </div>
+        <h2>Data History</h2>
+        <p>View complete scan history and statistics</p>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
+

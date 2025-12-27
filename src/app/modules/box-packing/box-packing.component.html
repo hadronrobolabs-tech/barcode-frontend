@@ -1,0 +1,228 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1>Box Packing</h1>
+    <p class="subtitle">Pack kits with component verification</p>
+  </div>
+
+  <mat-card class="setup-card">
+    <mat-card-content>
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Select Kit/Product</mat-label>
+          <mat-select 
+            [(ngModel)]="selectedKitId" 
+            (selectionChange)="onKitSelect()"
+            [disabled]="packingStarted || loading">
+            <mat-option [value]="null" disabled>Select Kit</mat-option>
+            <mat-option *ngFor="let kit of kits" [value]="kit.id">
+              {{ kit.kit_name || kit.name }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matPrefix>inventory_2</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div *ngIf="!packingStarted" class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Scan Box Barcode</mat-label>
+          <input
+            #boxBarcodeInput
+            matInput
+            type="text"
+            placeholder="Scan box barcode (or enter manually)"
+            [(ngModel)]="boxBarcode"
+            (keyup.enter)="startPacking()"
+            [disabled]="loading"
+            autofocus
+          />
+          <mat-icon matPrefix>qr_code</mat-icon>
+          <mat-hint *ngIf="!selectedKitId">Select kit for new sessions, or scan box barcode to resume existing session</mat-hint>
+        </mat-form-field>
+        <button 
+          mat-raised-button 
+          color="primary"
+          (click)="startPacking()" 
+          [disabled]="loading || !boxBarcode.trim()"
+          class="start-btn">
+          <mat-icon>play_arrow</mat-icon>
+          <span>{{ loading ? 'Starting...' : 'Start Packing' }}</span>
+        </button>
+      </div>
+
+      <div *ngIf="packingStarted" class="session-info">
+        <mat-card class="info-card">
+          <mat-card-content>
+            <div class="info-item">
+              <mat-icon [class.verified]="boxBarcodeScanned">qr_code</mat-icon>
+              <div>
+                <div class="info-label">Box Barcode</div>
+                <div class="info-value">
+                  {{ boxBarcode }}
+                  <mat-icon *ngIf="boxBarcodeScanned" class="check-icon" color="primary">check_circle</mat-icon>
+                </div>
+              </div>
+            </div>
+            <div class="info-item">
+              <mat-icon>inventory_2</mat-icon>
+              <div>
+                <div class="info-label">Kit</div>
+                <div class="info-value">{{ selectedKitName }}</div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <div *ngIf="errorMessage" class="error-message">
+        <mat-icon>error</mat-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+      <div *ngIf="successMessage" class="success-message">
+        <mat-icon>check_circle</mat-icon>
+        <span>{{ successMessage }}</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card *ngIf="requirements.length > 0" class="requirements-card">
+    <mat-card-header>
+      <mat-card-title>Kit Requirements</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <table mat-table [dataSource]="requirementsDataSource" class="requirements-table">
+        <ng-container matColumnDef="index">
+          <th mat-header-cell *matHeaderCellDef>#</th>
+          <td mat-cell *matCellDef="let element; let i = index">{{ i + 1 }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="component">
+          <th mat-header-cell *matHeaderCellDef>Component</th>
+          <td mat-cell *matCellDef="let element">
+            <div class="component-cell">
+              <div class="component-name">{{ element.component_name || element.name }}</div>
+              <div class="component-category">
+                <mat-icon>category</mat-icon>
+                <span>{{ element.category_name || element.category }}</span>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="category">
+          <th mat-header-cell *matHeaderCellDef>Category</th>
+          <td mat-cell *matCellDef="let element">{{ element.category_name || element.category }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="required">
+          <th mat-header-cell *matHeaderCellDef>Required</th>
+          <td mat-cell *matCellDef="let element">{{ element.required }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="scanned">
+          <th mat-header-cell *matHeaderCellDef>Scanned</th>
+          <td mat-cell *matCellDef="let element">{{ element.scanned }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="scannedBarcodes">
+          <th mat-header-cell *matHeaderCellDef>Scanned Barcodes</th>
+          <td mat-cell *matCellDef="let element">
+            <div *ngIf="element.scannedBarcodes && element.scannedBarcodes.length > 0" class="scanned-barcodes-list">
+              <mat-chip *ngFor="let barcode of element.scannedBarcodes" class="barcode-chip">
+                {{ barcode }}
+                <button 
+                  mat-icon-button 
+                  (click)="removeScannedComponent(element, barcode)"
+                  [disabled]="loading"
+                  matTooltip="Remove this barcode"
+                  class="remove-barcode-btn">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </mat-chip>
+            </div>
+            <span *ngIf="!element.scannedBarcodes || element.scannedBarcodes.length === 0" class="no-barcodes">-</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let element">
+            <mat-chip *ngIf="element.status === 'Success' || element.scanned >= element.required" class="success-chip">
+              <mat-icon>check_circle</mat-icon>
+              Success
+            </mat-chip>
+            <mat-chip *ngIf="element.status === 'Pending' || element.scanned < element.required" class="pending-chip">
+              <mat-icon>schedule</mat-icon>
+              Pending ({{ element.required - element.scanned }} remaining)
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="action">
+          <th mat-header-cell *matHeaderCellDef>Action</th>
+          <td mat-cell *matCellDef="let element">
+            <button 
+              *ngIf="element.scanned > 0"
+              mat-icon-button 
+              color="warn"
+              (click)="removeLastScannedComponent(element)"
+              [disabled]="loading"
+              matTooltip="Remove last scanned barcode">
+              <mat-icon>undo</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card *ngIf="packingStarted" class="scan-card">
+    <mat-card-content>
+      <div class="scan-input-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Scan Component Barcode</mat-label>
+          <input
+            #scanInputField
+            matInput
+            type="text"
+            placeholder="Scan barcode"
+            [(ngModel)]="scanInput"
+            (keyup.enter)="verifyScan()"
+            [disabled]="loading"
+            autofocus
+          />
+          <mat-icon matPrefix>scanner</mat-icon>
+        </mat-form-field>
+        <button 
+          mat-raised-button 
+          color="primary"
+          (click)="verifyScan()" 
+          [disabled]="loading || !scanInput.trim()"
+          class="scan-btn">
+          <mat-icon>scanner</mat-icon>
+          <span>{{ loading ? 'Scanning...' : 'Scan' }}</span>
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <div *ngIf="packingStarted" class="actions">
+    <button 
+      mat-raised-button 
+      color="accent"
+      (click)="completePacking()" 
+      [disabled]="loading || !areAllComponentsScanned()" 
+      class="complete-btn"
+      [matTooltip]="!areAllComponentsScanned() ? 'All components must be scanned before completing' : ''">
+      <mat-icon>check_circle</mat-icon>
+      <span>{{ loading ? 'Completing...' : 'Complete Packing' }}</span>
+    </button>
+  </div>
+
+  <div *ngIf="loading && !packingStarted" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading...</p>
+  </div>
+</div>

@@ -1,0 +1,178 @@
+<div class="auth-container">
+  <mat-card class="auth-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>person_add</mat-icon>
+        Create Account
+      </mat-card-title>
+      <mat-card-subtitle>Sign up for a new account</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="signupForm" (ngSubmit)="onRegister()">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Full Name</mat-label>
+      <input matInput formControlName="fullName" placeholder="Enter your full name" />
+      <mat-icon matPrefix>person</mat-icon>
+      <mat-error *ngIf="signupForm.get('fullName')?.hasError('required') && signupForm.get('fullName')?.touched">
+        {{ getErrorMessage('fullName') }}
+      </mat-error>
+      <mat-error *ngIf="signupForm.get('fullName')?.hasError('minlength') && signupForm.get('fullName')?.touched">
+        {{ getErrorMessage('fullName') }}
+      </mat-error>
+      <mat-error *ngIf="signupForm.get('fullName')?.hasError('pattern') && signupForm.get('fullName')?.touched">
+        {{ getErrorMessage('fullName') }}
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Email</mat-label>
+      <input matInput formControlName="email" type="email" placeholder="Enter your email" />
+      <mat-icon matPrefix>email</mat-icon>
+      <mat-error *ngIf="signupForm.get('email')?.hasError('required') && signupForm.get('email')?.touched">
+        {{ getErrorMessage('email') }}
+      </mat-error>
+      <mat-error *ngIf="signupForm.get('email')?.hasError('email') && signupForm.get('email')?.touched">
+        {{ getErrorMessage('email') }}
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Phone Number</mat-label>
+      <input matInput formControlName="phone" type="tel" placeholder="Enter 10-digit phone number" />
+      <mat-icon matPrefix>phone</mat-icon>
+      <mat-error *ngIf="signupForm.get('phone')?.hasError('required') && signupForm.get('phone')?.touched">
+        {{ getErrorMessage('phone') }}
+      </mat-error>
+      <mat-error *ngIf="signupForm.get('phone')?.hasError('pattern') && signupForm.get('phone')?.touched">
+        {{ getErrorMessage('phone') }}
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Password</mat-label>
+      <input
+        matInput
+        [type]="hidePassword ? 'password' : 'text'"
+        formControlName="password"
+        placeholder="Create a strong password"
+      />
+      <mat-icon matPrefix>lock</mat-icon>
+      <button
+        mat-icon-button
+        matSuffix
+        (click)="hidePassword = !hidePassword"
+        type="button"
+        aria-label="Toggle password visibility"
+      >
+        <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+      </button>
+      <mat-error *ngIf="signupForm.get('password')?.hasError('required') && signupForm.get('password')?.touched">
+        {{ getErrorMessage('password') }}
+      </mat-error>
+      <mat-error *ngIf="signupForm.get('password')?.hasError('minlength') && signupForm.get('password')?.touched">
+        {{ getErrorMessage('password') }}
+      </mat-error>
+      <mat-error *ngIf="signupForm.get('password')?.hasError('weakPassword') && signupForm.get('password')?.touched">
+        {{ getErrorMessage('password') }}
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Password Strength Indicator -->
+    <div *ngIf="signupForm.get('password')?.value && signupForm.get('password')?.touched" class="password-strength">
+      <div class="strength-label">Password Strength: <span [style.color]="passwordStrengthColor">{{ passwordStrengthLabel }}</span></div>
+      <div class="strength-bar">
+        <div 
+          class="strength-fill" 
+          [style.width.%]="(passwordStrength / 5) * 100"
+          [style.background-color]="passwordStrengthColor">
+        </div>
+      </div>
+      <div class="password-requirements">
+        <small>Password must contain:</small>
+        <ul>
+          <li [class.valid]="checkLength(signupForm.get('password')?.value)">At least 6 characters</li>
+          <li [class.valid]="checkCase(signupForm.get('password')?.value)">Uppercase and lowercase letters</li>
+          <li [class.valid]="checkNumber(signupForm.get('password')?.value)">At least one number</li>
+          <li [class.valid]="checkSpecialChar(signupForm.get('password')?.value)">At least one special character</li>
+        </ul>
+      </div>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Confirm Password</mat-label>
+      <input
+        matInput
+        [type]="hideConfirmPassword ? 'password' : 'text'"
+        formControlName="confirmPassword"
+        placeholder="Re-enter your password"
+      />
+      <mat-icon matPrefix>lock_outline</mat-icon>
+      <button
+        mat-icon-button
+        matSuffix
+        (click)="hideConfirmPassword = !hideConfirmPassword"
+        type="button"
+        aria-label="Toggle password visibility"
+      >
+        <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+      </button>
+      <mat-error *ngIf="signupForm.hasError('mismatch') && signupForm.get('confirmPassword')?.touched">
+        Passwords do not match
+      </mat-error>
+      <mat-error *ngIf="signupForm.get('confirmPassword')?.hasError('required') && signupForm.get('confirmPassword')?.touched">
+        Please confirm your password
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Account Type</mat-label>
+      <mat-select formControlName="role" (selectionChange)="onRoleChange()">
+        <mat-option value="WORKER">
+          <mat-icon>person</mat-icon>
+          Worker (Standard User)
+        </mat-option>
+        <mat-option value="ADMIN">
+          <mat-icon>admin_panel_settings</mat-icon>
+          Administrator
+        </mat-option>
+      </mat-select>
+      <mat-icon matPrefix>badge</mat-icon>
+      <mat-hint>Select your account type</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field *ngIf="signupForm.get('role')?.value === 'ADMIN'" appearance="outline" class="full-width">
+      <mat-label>Admin Code</mat-label>
+      <input matInput formControlName="adminCode" type="password" placeholder="Enter admin registration code" />
+      <mat-icon matPrefix>vpn_key</mat-icon>
+      <mat-hint>Required for admin registration. Contact system administrator for the code.</mat-hint>
+      <mat-error *ngIf="signupForm.get('adminCode')?.hasError('required') && signupForm.get('adminCode')?.touched">
+        Admin code is required for administrator registration
+      </mat-error>
+    </mat-form-field>
+
+    <button
+      mat-raised-button
+      color="primary"
+      class="full-width register-button"
+      type="submit"
+      [disabled]="loading || signupForm.invalid"
+    >
+      <mat-spinner *ngIf="loading" diameter="20" class="button-spinner"></mat-spinner>
+      <span *ngIf="!loading">Register</span>
+      <span *ngIf="loading">Registering...</span>
+    </button>
+
+        <div *ngIf="errorMessage" class="error-message">
+          <mat-icon>error</mat-icon>
+          <span>{{ errorMessage }}</span>
+        </div>
+      </form>
+    </mat-card-content>
+    <mat-card-footer>
+      <p class="login-text">
+        Already have an account?
+        <a routerLink="/login">Login</a>
+      </p>
+    </mat-card-footer>
+  </mat-card>
+</div>

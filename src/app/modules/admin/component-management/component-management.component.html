@@ -1,0 +1,145 @@
+<div class="management-container">
+  <mat-card class="form-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>{{ editingComponent ? 'edit' : 'add' }}</mat-icon>
+        {{ editingComponent ? 'Edit Component' : 'Add New Component' }}
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="componentForm" (ngSubmit)="onSubmit()" class="component-form">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Component Name</mat-label>
+            <input matInput formControlName="name" placeholder="e.g., M5 Screw, DC Motor 12V" />
+            <mat-icon matPrefix>build</mat-icon>
+            <mat-error *ngIf="componentForm.get('name')?.hasError('required') && componentForm.get('name')?.touched">
+              Component name is required
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Category</mat-label>
+            <mat-select formControlName="category">
+              <mat-option [value]="null" disabled>Select Category</mat-option>
+              <mat-option *ngFor="let cat of categories" [value]="cat.name">
+                {{ cat.name }} ({{ cat.prefix }})
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>category</mat-icon>
+            <mat-error *ngIf="componentForm.get('category')?.hasError('required') && componentForm.get('category')?.touched">
+              Category is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-checkbox formControlName="is_packet" class="packet-checkbox">
+            Is Packet Component
+          </mat-checkbox>
+
+          <mat-form-field appearance="outline" class="full-width" *ngIf="componentForm.get('is_packet')?.value">
+            <mat-label>Packet Quantity</mat-label>
+            <input matInput type="number" formControlName="packet_quantity" min="1" placeholder="e.g., 50" />
+            <mat-icon matPrefix>numbers</mat-icon>
+            <mat-error *ngIf="componentForm.get('packet_quantity')?.hasError('required') && componentForm.get('packet_quantity')?.touched">
+              Packet quantity is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Description (Optional)</mat-label>
+            <textarea matInput formControlName="description" rows="3" placeholder="Component description"></textarea>
+            <mat-icon matPrefix>description</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="button-group">
+          <button mat-raised-button color="primary" type="submit" [disabled]="loading || componentForm.invalid">
+            <mat-icon>{{ editingComponent ? 'save' : 'add' }}</mat-icon>
+            <span>{{ loading ? 'Saving...' : (editingComponent ? 'Update Component' : 'Create Component') }}</span>
+          </button>
+          <button mat-stroked-button type="button" (click)="resetForm()" [disabled]="loading">
+            <mat-icon>cancel</mat-icon>
+            <span>Cancel</span>
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="list-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>list</mat-icon>
+        Components ({{ components.length }})
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="loading && components.length === 0" class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+
+      <table mat-table [dataSource]="dataSource" class="components-table" *ngIf="components.length > 0">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Component Name</th>
+          <td mat-cell *matCellDef="let component">{{ component.name }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="category">
+          <th mat-header-cell *matHeaderCellDef>Category</th>
+          <td mat-cell *matCellDef="let component">
+            <mat-chip>{{ component.category }}</mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>Type</th>
+          <td mat-cell *matCellDef="let component">
+            <mat-chip [color]="component.is_packet ? 'accent' : 'primary'">
+              {{ component.is_packet ? 'Packet' : 'Item' }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="quantity">
+          <th mat-header-cell *matHeaderCellDef>Packet Qty</th>
+          <td mat-cell *matCellDef="let component">
+            {{ component.packet_quantity || '-' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let component">
+            <mat-chip [color]="component.status === 'ACTIVE' ? 'primary' : 'warn'">
+              {{ component.status }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let component">
+            <button mat-icon-button color="primary" (click)="editComponent(component)" title="Edit">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteComponent(component)" title="Delete">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <div *ngIf="!loading && components.length === 0" class="empty-state">
+        <mat-icon>build</mat-icon>
+        <p>No components found. Create your first component above.</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

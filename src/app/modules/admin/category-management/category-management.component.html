@@ -1,0 +1,118 @@
+<div class="management-container">
+  <mat-card class="form-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>{{ editingCategory ? 'edit' : 'add' }}</mat-icon>
+        {{ editingCategory ? 'Edit Category' : 'Add New Category' }}
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="categoryForm" (ngSubmit)="onSubmit()" class="category-form">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Category Name</mat-label>
+            <input matInput formControlName="name" placeholder="e.g., SCREW, MOTOR" />
+            <mat-icon matPrefix>label</mat-icon>
+            <mat-error *ngIf="categoryForm.get('name')?.hasError('required') && categoryForm.get('name')?.touched">
+              Category name is required
+            </mat-error>
+            <mat-error *ngIf="categoryForm.get('name')?.hasError('minlength') && categoryForm.get('name')?.touched">
+              Name must be at least 2 characters
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Prefix</mat-label>
+            <input matInput formControlName="prefix" placeholder="e.g., SCR, MTR" maxlength="10" />
+            <mat-icon matPrefix>tag</mat-icon>
+            <mat-hint>Used in barcode generation (max 10 chars)</mat-hint>
+            <mat-error *ngIf="categoryForm.get('prefix')?.hasError('required') && categoryForm.get('prefix')?.touched">
+              Prefix is required
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Scan Type</mat-label>
+            <mat-select formControlName="scan_type">
+              <mat-option value="PACKET">PACKET</mat-option>
+              <mat-option value="ITEM">ITEM</mat-option>
+              <mat-option value="BOX">BOX</mat-option>
+            </mat-select>
+            <mat-icon matPrefix>scanner</mat-icon>
+            <mat-error *ngIf="categoryForm.get('scan_type')?.hasError('required') && categoryForm.get('scan_type')?.touched">
+              Scan type is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="button-group">
+          <button mat-raised-button color="primary" type="submit" [disabled]="loading || categoryForm.invalid">
+            <mat-icon>{{ editingCategory ? 'save' : 'add' }}</mat-icon>
+            <span>{{ loading ? 'Saving...' : (editingCategory ? 'Update Category' : 'Create Category') }}</span>
+          </button>
+          <button mat-stroked-button type="button" (click)="resetForm()" [disabled]="loading">
+            <mat-icon>cancel</mat-icon>
+            <span>Cancel</span>
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="list-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>list</mat-icon>
+        Categories ({{ categories.length }})
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="loading && categories.length === 0" class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+
+      <table mat-table [dataSource]="dataSource" class="categories-table" *ngIf="categories.length > 0">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Category Name</th>
+          <td mat-cell *matCellDef="let category">{{ category.name }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="prefix">
+          <th mat-header-cell *matHeaderCellDef>Prefix</th>
+          <td mat-cell *matCellDef="let category">
+            <mat-chip>{{ category.prefix }}</mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="scan_type">
+          <th mat-header-cell *matHeaderCellDef>Scan Type</th>
+          <td mat-cell *matCellDef="let category">
+            <mat-chip [color]="getScanTypeColor(category.scan_type)">
+              {{ category.scan_type }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let category">
+            <button mat-icon-button color="primary" (click)="editCategory(category)" title="Edit">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteCategory(category)" title="Delete">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <div *ngIf="!loading && categories.length === 0" class="empty-state">
+        <mat-icon>category</mat-icon>
+        <p>No categories found. Create your first category above.</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

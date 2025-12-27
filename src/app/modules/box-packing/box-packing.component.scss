@@ -1,0 +1,281 @@
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 32px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    color: #333;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    color: #666;
+    margin: 0;
+  }
+}
+
+.setup-card, .requirements-card, .scan-card {
+  margin-bottom: 24px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+
+  .full-width {
+    flex: 1;
+  }
+
+  .start-btn {
+    margin-top: 8px;
+    height: 56px;
+    min-width: 140px;
+
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
+}
+
+.session-info {
+  margin-top: 16px;
+}
+
+.info-card {
+  background-color: #f5f5f5;
+  margin-top: 16px;
+
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+
+    mat-icon {
+      color: #666;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+    }
+
+    .info-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+  }
+}
+
+.error-message, .success-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-top: 16px;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.error-message {
+  background-color: #fee;
+  color: #c33;
+  border: 1px solid #fcc;
+}
+
+.success-message {
+  background-color: #efe;
+  color: #3c3;
+  border: 1px solid #cfc;
+}
+
+.requirements-table {
+  width: 100%;
+
+  .mat-mdc-header-cell {
+    font-weight: 600;
+    background-color: #f5f5f5;
+  }
+
+  .component-cell {
+    .component-name {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+      color: #333;
+    }
+
+    .component-category {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #666;
+
+      mat-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+
+  .complete-chip {
+    background-color: #28a745;
+    color: white;
+
+    mat-icon {
+      margin-right: 4px;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .pending-chip {
+    background-color: #ffc107;
+    color: #000;
+
+    mat-icon {
+      margin-right: 4px;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .scanned-barcodes-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+
+    .barcode-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background-color: #e3f2fd;
+      color: #1976d2;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 16px;
+
+      .remove-barcode-btn {
+        width: 20px;
+        height: 20px;
+        line-height: 20px;
+        margin-left: 4px;
+
+        mat-icon {
+          font-size: 14px;
+          width: 14px;
+          height: 14px;
+        }
+      }
+    }
+  }
+
+  .no-barcodes {
+    color: #999;
+    font-style: italic;
+  }
+
+  .success-chip {
+    background-color: #28a745;
+    color: white;
+
+    mat-icon {
+      margin-right: 4px;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.info-item {
+  mat-icon.verified {
+    color: #4caf50;
+  }
+
+  .check-icon {
+    margin-left: 8px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.scan-input-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+
+  .full-width {
+    flex: 1;
+  }
+
+  .scan-btn {
+    margin-top: 8px;
+    height: 56px;
+    min-width: 120px;
+
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+
+  .complete-btn {
+    min-width: 200px;
+
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  gap: 16px;
+
+  p {
+    margin: 0;
+    color: #666;
+  }
+}
+
+@media (max-width: 768px) {
+  .form-row, .scan-input-row {
+    flex-direction: column;
+
+    button {
+      width: 100%;
+      margin-top: 0 !important;
+    }
+  }
+}

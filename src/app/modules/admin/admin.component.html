@@ -1,0 +1,29 @@
+<div class="admin-container">
+  <div class="admin-header">
+    <h1>
+      <mat-icon>admin_panel_settings</mat-icon>
+      Admin Panel
+    </h1>
+    <p class="subtitle">Manage Categories and Kits (Components are created within Kits)</p>
+  </div>
+
+  <mat-tab-group [(selectedIndex)]="selectedTab" (selectedIndexChange)="onTabChange($event)" class="admin-tabs">
+    <!-- Categories Tab -->
+    <mat-tab label="Categories">
+      <ng-template mat-tab-label>
+        <mat-icon>category</mat-icon>
+        Categories
+      </ng-template>
+      <app-category-management></app-category-management>
+    </mat-tab>
+
+    <!-- Kits Tab -->
+    <mat-tab label="Kits">
+      <ng-template mat-tab-label>
+        <mat-icon>inventory_2</mat-icon>
+        Kits & Components
+      </ng-template>
+      <app-kit-management></app-kit-management>
+    </mat-tab>
+  </mat-tab-group>
+</div>

@@ -1,0 +1,76 @@
+<div class="app-container">
+  <!-- Top Toolbar -->
+  <mat-toolbar color="primary" class="header-toolbar">
+    <button 
+      *ngIf="shouldShowSidebar()"
+      mat-icon-button 
+      (click)="toggleSidenav()"
+      class="menu-toggle">
+      <mat-icon>menu</mat-icon>
+    </button>
+    
+    <div class="app-title" routerLink="/dashboard">
+      <mat-icon>qr_code_scanner</mat-icon>
+      <span>Barcode Management</span>
+    </div>
+
+    <span class="spacer"></span>
+
+    <div *ngIf="isLoggedIn" class="user-section">
+      <button mat-button [matMenuTriggerFor]="userMenu" class="user-menu-btn">
+        <mat-icon>account_circle</mat-icon>
+        <span class="user-name">{{ userName }}</span>
+        <mat-icon>arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #userMenu="matMenu">
+        <div class="user-menu-header">
+          <div class="user-info">
+            <div class="user-name-large">{{ userName }}</div>
+            <div class="user-email">{{ userEmail }}</div>
+          </div>
+        </div>
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Logout</span>
+        </button>
+      </mat-menu>
+    </div>
+  </mat-toolbar>
+
+  <!-- Sidebar Navigation -->
+  <mat-sidenav-container class="sidenav-container" *ngIf="shouldShowSidebar()">
+    <mat-sidenav 
+      #sidenav 
+      mode="side" 
+      [opened]="sidenavOpened"
+      class="app-sidenav"
+      fixedInViewport="true">
+      
+      <div class="sidenav-header">
+        <h3>Navigation</h3>
+      </div>
+
+      <mat-nav-list>
+        <a 
+          mat-list-item 
+          *ngFor="let item of filteredMenuItems" 
+          [routerLink]="item.route"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}">
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.name }}</span>
+        </a>
+      </mat-nav-list>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="main-content">
+      <router-outlet></router-outlet>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+
+  <!-- Content without sidebar (for login/register pages) -->
+  <div *ngIf="!shouldShowSidebar()" class="full-content">
+    <router-outlet></router-outlet>
+  </div>
+</div>

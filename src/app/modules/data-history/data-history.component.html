@@ -1,0 +1,185 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1>Barcode Scan History</h1>
+    <p class="subtitle">Complete audit trail of all barcode scans</p>
+  </div>
+
+  <mat-card class="filters-card">
+    <mat-card-content>
+      <div class="filters-grid">
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Search</mat-label>
+          <input 
+            matInput
+            type="search" 
+            placeholder="Search barcode, component, or product" 
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="onSearch()" />
+          <mat-icon matPrefix>search</mat-icon>
+          <button mat-icon-button matSuffix (click)="onSearch()" matTooltip="Search">
+            <mat-icon>search</mat-icon>
+          </button>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Filter by Kit</mat-label>
+          <mat-select 
+            [(ngModel)]="selectedKitId"
+            (selectionChange)="onKitChange()">
+            <mat-option [value]="null">All Kits</mat-option>
+            <mat-option *ngFor="let kit of kits" [value]="kit.id">
+              {{ kit.kit_name || kit.name }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matPrefix>inventory_2</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Status Filter</mat-label>
+          <mat-select 
+            [(ngModel)]="statusFilter"
+            (selectionChange)="onFilterChange()">
+            <mat-option value="all">All Status</mat-option>
+            <mat-option value="success">Success</mat-option>
+            <mat-option value="pending">Pending</mat-option>
+            <mat-option value="failed">Failed</mat-option>
+            <mat-option value="scanned">Scanned</mat-option>
+            <mat-option value="boxed">Boxed</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Start Date</mat-label>
+          <input 
+            matInput
+            type="date" 
+            [(ngModel)]="startDate"
+            (change)="onDateChange()" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>End Date</mat-label>
+          <input 
+            matInput
+            type="date" 
+            [(ngModel)]="endDate"
+            (change)="onDateChange()" />
+        </mat-form-field>
+
+        <button 
+          mat-stroked-button 
+          (click)="clearFilters()"
+          class="clear-btn">
+          <mat-icon>clear</mat-icon>
+          <span>Clear Filters</span>
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="stats-cards">
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-value">{{ statistics.total || 0 }}</div>
+        <div class="stat-label">Total</div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="stat-card success">
+      <mat-card-content>
+        <div class="stat-value">{{ statistics.success || 0 }}</div>
+        <div class="stat-label">Success</div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="stat-card pending">
+      <mat-card-content>
+        <div class="stat-value">{{ statistics.pending || 0 }}</div>
+        <div class="stat-label">Pending</div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="stat-card failed">
+      <mat-card-content>
+        <div class="stat-value">{{ statistics.failed || 0 }}</div>
+        <div class="stat-label">Failed</div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card class="history-card">
+    <mat-card-header>
+      <mat-card-title>Scan History</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="loading" class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Loading history...</p>
+      </div>
+
+      <div *ngIf="errorMessage" class="error-message">
+        <mat-icon>error</mat-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <div class="table-container" *ngIf="!loading && history.length > 0">
+        <table mat-table [dataSource]="dataSource" class="history-table">
+          <ng-container matColumnDef="barcode">
+            <th mat-header-cell *matHeaderCellDef>Barcode</th>
+            <td mat-cell *matCellDef="let item">{{ item.barcode || item.barcode_value }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="component">
+            <th mat-header-cell *matHeaderCellDef>Component</th>
+            <td mat-cell *matCellDef="let item">{{ item.component_name || 'Unknown' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="category">
+            <th mat-header-cell *matHeaderCellDef>Category</th>
+            <td mat-cell *matCellDef="let item">{{ item.component_category || 'N/A' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="product">
+            <th mat-header-cell *matHeaderCellDef>Product</th>
+            <td mat-cell *matCellDef="let item">{{ item.product_name || '-' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="scannedBy">
+            <th mat-header-cell *matHeaderCellDef>Scanned By</th>
+            <td mat-cell *matCellDef="let item">{{ item.scanned_by || item.scanned_by_email || 'Unknown' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="time">
+            <th mat-header-cell *matHeaderCellDef>Time</th>
+            <td mat-cell *matCellDef="let item">{{ item.time || item.scanned_at | date:'medium' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let item">
+              <mat-chip [ngClass]="getStatusClass(item.status)">
+                {{ item.status || 'UNKNOWN' }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="remark">
+            <th mat-header-cell *matHeaderCellDef>Remark</th>
+            <td mat-cell *matCellDef="let item">
+              <span *ngIf="item.remark" class="remark-text" [matTooltip]="item.remark">
+                {{ item.remark.length > 50 ? (item.remark.substring(0, 50) + '...') : item.remark }}
+              </span>
+              <span *ngIf="!item.remark" class="no-remark">-</span>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </div>
+
+      <div *ngIf="!loading && history.length === 0" class="empty-state">
+        <mat-icon>history</mat-icon>
+        <p>No scan history found — scan a barcode to see history here.</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
+

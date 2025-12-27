@@ -1,0 +1,355 @@
+import { Component, OnInit } from '@angular/core';
+import { KitService } from '../../service/kit.service';
+import { BarcodeService } from '../../service/barcode.service';
+import { AuthService } from '../../service/auth.service';
+
+interface SelectedComponent {
+  id: number;
+  name: string;
+  category: string;
+  category_name: string;
+  selected: boolean;
+}
+
+interface ComponentOption {
+  id: number;
+  name: string;
+  category_name: string;
+}
+
+@Component({
+  selector: 'app-generate-barcode',
+  templateUrl: './generate-qr.component.html',
+  styleUrls: ['./generate-qr.component.scss']
+})
+export class GenerateBarcodeComponent implements OnInit {
+  kits: any[] = [];
+  kitComponents: any[] = [];
+  selectedKitId: number | null = null;
+  selectedKitName: string = '';
+  selectedComponents: SelectedComponent[] = [];
+  componentOptions: ComponentOption[] = []; // For dropdown
+  selectedComponentId: number | null = null; // Selected component from dropdown
+  componentQuantity: number = 1; // Quantity for selected component
+  loading = false;
+  errorMessage = '';
+  successMessage = '';
+  generatedBarcodes: any[] = [];
+  generateBoxBarcode = false;
+  boxBarcodeQuantity: number = 1;
+  
+  // Barcode lookup for box code PDF
+  barcodeListInput: string = '';
+  showBarcodeLookup: boolean = false;
+
+  constructor(
+    private kitService: KitService,
+    private barcodeService: BarcodeService,
+    private authService: AuthService
+  ) {}
+
+  ngOnInit() {
+    this.loadKits();
+  }
+
+  loadKits() {
+    this.kitService.getAll().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.kits = response.data;
+        }
+      },
+      error: (err) => {
+        this.errorMessage = 'Failed to load kits';
+      }
+    });
+  }
+
+  onKitSelect() {
+    if (!this.selectedKitId) {
+      this.kitComponents = [];
+      this.selectedComponents = [];
+      this.componentOptions = [];
+      this.selectedComponentId = null;
+      this.selectedKitName = '';
+      this.errorMessage = '';
+      this.generateBoxBarcode = false; // Reset box barcode when kit changes
+      return;
+    }
+
+    const selectedKit = this.kits.find(k => k.id === this.selectedKitId);
+    this.selectedKitName = selectedKit ? (selectedKit.kit_name || selectedKit.name) : '';
+
+    this.loading = true;
+    this.errorMessage = '';
+    this.kitService.getComponentsForKit(this.selectedKitId).subscribe({
+      next: (response) => {
+        this.loading = false;
+        if (response.success && response.data && response.data.length > 0) {
+          // Map components for dropdown
+          this.kitComponents = response.data;
+          this.componentOptions = response.data.map((comp: any) => ({
+            id: comp.id,
+            name: comp.name || comp.component_name,
+            category_name: comp.category_name || comp.category_prefix || comp.category
+          }));
+          this.selectedComponents = response.data.map((comp: any) => ({
+            id: comp.id,
+            name: comp.name || comp.component_name,
+            category: comp.category || comp.category_name,
+            category_name: comp.category_name || comp.category_prefix || comp.category,
+            selected: false
+          }));
+        } else {
+          this.errorMessage = 'No components found for this kit. Please add components to the kit first.';
+          this.componentOptions = [];
+          this.selectedComponents = [];
+        }
+      },
+      error: (err) => {
+        this.loading = false;
+        this.errorMessage = err.error?.error || 'Failed to load kit components';
+        this.componentOptions = [];
+        this.selectedComponents = [];
+      }
+    });
+  }
+
+  onBoxBarcodeToggle() {
+    // If box barcode is enabled, clear component selection
+    if (this.generateBoxBarcode) {
+      this.selectedComponentId = null;
+      this.componentQuantity = 1;
+    }
+  }
+
+  onComponentSelect() {
+    // If component is selected, disable box barcode
+    if (this.selectedComponentId) {
+      this.generateBoxBarcode = false;
+    }
+  }
+
+  getSelectedCount(): number {
+    return this.selectedComponentId ? 1 : 0;
+  }
+
+  getTotalBarcodeCount(): number {
+    if (this.generateBoxBarcode) {
+      return this.boxBarcodeQuantity;
+    } else if (this.selectedComponentId) {
+      return this.componentQuantity;
+    }
+    return 0;
+  }
+
+  generateBarcodes() {
+    // Validation: Only one type at a time
+    if (!this.selectedKitId) {
+      this.errorMessage = 'Please select a kit';
+      return;
+    }
+
+    if (!this.selectedComponentId && !this.generateBoxBarcode) {
+      this.errorMessage = 'Please select a component or enable box barcode generation';
+      return;
+    }
+
+    if (this.selectedComponentId && this.generateBoxBarcode) {
+      this.errorMessage = 'Please select either component barcode OR box barcode, not both';
+      return;
+    }
+
+    // Validate component selection
+    if (this.selectedComponentId) {
+      if (!this.componentQuantity || this.componentQuantity < 1) {
+        this.errorMessage = 'Please enter a valid quantity (minimum 1) for component';
+        return;
+      }
+    }
+
+    // Validate box barcode
+    if (this.generateBoxBarcode) {
+      if (!this.boxBarcodeQuantity || this.boxBarcodeQuantity < 1) {
+        this.errorMessage = 'Please enter valid box barcode quantity';
+        return;
+      }
+    }
+
+    this.loading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.generatedBarcodes = [];
+
+    const user = this.authService.getUser();
+    const userId = user?.id || null;
+
+    let allBarcodes: any[] = [];
+    let completed = 0;
+    let failed = 0;
+    const totalRequests = this.generateBoxBarcode ? this.boxBarcodeQuantity : this.componentQuantity;
+
+    // Generate component barcodes OR box barcodes (only one type)
+    if (this.selectedComponentId && !this.generateBoxBarcode) {
+      // Generate component barcodes
+      for (let i = 0; i < this.componentQuantity; i++) {
+        this.barcodeService.generate({
+          product_id: this.selectedKitId!,
+          component_id: this.selectedComponentId!,
+          quantity: 1,
+          user_id: userId,
+          object_type: 'COMPONENT'
+        }).subscribe({
+          next: (response) => {
+            completed++;
+            if (response && (response.success || response.barcodes)) {
+              const barcodes = response.barcodes || [];
+              allBarcodes.push(...barcodes);
+            }
+            this.checkGenerationComplete(completed, failed, totalRequests, allBarcodes);
+          },
+          error: (err) => {
+            completed++;
+            failed++;
+            this.checkGenerationComplete(completed, failed, totalRequests, allBarcodes);
+          }
+        });
+      }
+    } else if (this.generateBoxBarcode && !this.selectedComponentId) {
+      // Generate box barcodes
+      for (let i = 0; i < this.boxBarcodeQuantity; i++) {
+        this.barcodeService.generate({
+          product_id: this.selectedKitId!,
+          component_id: null,
+          quantity: 1,
+          user_id: userId,
+          object_type: 'BOX'
+        }).subscribe({
+          next: (response) => {
+            completed++;
+            if (response && (response.success || response.barcodes)) {
+              const barcodes = response.barcodes || [];
+              allBarcodes.push(...barcodes);
+            }
+            this.checkGenerationComplete(completed, failed, totalRequests, allBarcodes);
+          },
+          error: (err) => {
+            completed++;
+            failed++;
+            this.checkGenerationComplete(completed, failed, totalRequests, allBarcodes);
+          }
+        });
+      }
+    }
+  }
+
+  private checkGenerationComplete(completed: number, failed: number, total: number, allBarcodes: any[]) {
+    if (completed === total) {
+      this.loading = false;
+      this.generatedBarcodes = allBarcodes;
+      if (failed === 0) {
+        this.successMessage = `Successfully generated ${allBarcodes.length} barcode(s)!`;
+      } else {
+        this.successMessage = `Generated ${allBarcodes.length} barcode(s). ${failed} failed.`;
+      }
+    }
+  }
+
+  downloadPdf() {
+    if (this.generatedBarcodes.length === 0) {
+      this.errorMessage = 'No barcodes generated yet';
+      return;
+    }
+
+    this.loading = true;
+    const user = this.authService.getUser();
+    const userId = user?.id || null;
+
+    this.barcodeService.downloadPdf({
+      barcodes: this.generatedBarcodes.map(b => b.barcode_value || b),
+      user_id: userId
+    }).subscribe({
+      next: (blob) => {
+        this.loading = false;
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `barcode-labels-${this.selectedKitName || 'kit'}.pdf`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        this.successMessage = 'PDF downloaded successfully!';
+      },
+      error: (err) => {
+        this.loading = false;
+        this.errorMessage = 'Failed to download PDF';
+      }
+    });
+  }
+
+  reset() {
+    this.selectedKitId = null;
+    this.selectedKitName = '';
+    this.kitComponents = [];
+    this.selectedComponents = [];
+    this.componentOptions = [];
+    this.selectedComponentId = null;
+    this.componentQuantity = 1;
+    this.generatedBarcodes = [];
+    this.generateBoxBarcode = false;
+    this.boxBarcodeQuantity = 1;
+    this.barcodeListInput = '';
+    this.showBarcodeLookup = false;
+    this.errorMessage = '';
+    this.successMessage = '';
+  }
+
+  // Download box code PDF for provided barcode list
+  downloadBoxCodePdf() {
+    if (!this.barcodeListInput.trim()) {
+      this.errorMessage = 'Please enter barcode list';
+      return;
+    }
+
+    // Parse barcode list (comma or newline separated)
+    const barcodes = this.barcodeListInput
+      .split(/[,\n]/)
+      .map(b => b.trim())
+      .filter(b => b.length > 0);
+
+    if (barcodes.length === 0) {
+      this.errorMessage = 'Please enter at least one barcode';
+      return;
+    }
+
+    this.loading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    const user = this.authService.getUser();
+    const userId = user?.id || null;
+
+    this.barcodeService.lookupBarcodesForBoxCode({
+      barcodes: barcodes,
+      user_id: userId
+    }).subscribe({
+      next: (blob: Blob) => {
+        this.loading = false;
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `box_codes_${new Date().getTime()}.pdf`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        this.successMessage = `Box code PDF downloaded successfully for ${barcodes.length} barcode(s)!`;
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 3000);
+      },
+      error: (err) => {
+        this.loading = false;
+        this.errorMessage = err.error?.error || 'Failed to generate box code PDF. Please check if all barcodes are valid.';
+      }
+    });
+  }
+}
+
