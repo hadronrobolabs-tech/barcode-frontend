@@ -10,22 +10,15 @@ import { Observable } from 'rxjs';
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
 
-  intercept(
-    req: HttpRequest<any>,
-    next: HttpHandler
-  ): Observable<HttpEvent<any>> {
-    // Get token from localStorage (or any other storage/service)
+  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+
     const token = localStorage.getItem('token');
 
-    // If token exists, clone request and add Authorization header
-    if (token) {
-      const cloned = req.clone({
-        headers: req.headers.set('Authorization', `Bearer ${token}`)
-      });
-      return next.handle(cloned);
-    }
+    const newReq = req.clone({
+      withCredentials: false,   // 🔥 VERY IMPORTANT (kills cookies)
+      setHeaders: token ? { Authorization: `Bearer ${token}` } : {}
+    });
 
-    // If no token, pass request as-is
-    return next.handle(req);
+    return next.handle(newReq);
   }
 }
