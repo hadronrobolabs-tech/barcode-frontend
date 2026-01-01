@@ -7,6 +7,8 @@ import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './auth.interceptor';
+import { HttpClientXsrfModule } from '@angular/common/http';
+
 
 // Material Modules
 import { MatIconModule } from '@angular/material/icon';
@@ -54,7 +56,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatChipsModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
-    MatTooltipModule
+    MatTooltipModule,
+    HttpClientXsrfModule.disable()
+
   ],
   providers: [
     {
