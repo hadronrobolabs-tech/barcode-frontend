@@ -255,6 +255,50 @@ export class GenerateBarcodeComponent implements OnInit {
     }
   }
 
+  // TSPL Raw Printing (Main method - Direct to printer)
+  printTSPL() {
+    if (this.generatedBarcodes.length === 0) {
+      this.errorMessage = 'No barcodes generated yet';
+      return;
+    }
+
+    this.loading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+    const user = this.authService.getUser();
+    const userId = user?.id || null;
+
+    this.barcodeService.printTSPL({
+      barcodes: this.generatedBarcodes.map(b => b.barcode_value || b),
+      user_id: userId,
+      step_text: "STEP 12",  // Can be made configurable
+      number_of_prints: "1"   // Can be made configurable
+    }).subscribe({
+      next: (response) => {
+        this.loading = false;
+        if (response.success) {
+          this.successMessage = `✅ ${response.message || `Successfully printed ${response.printed} label(s)`}`;
+          this.errorMessage = '';
+        } else {
+          this.errorMessage = `⚠️ ${response.error || 'Printing failed'}. ${response.message || ''}`;
+          // If TSPL commands are returned, show them for manual printing
+          if (response.tsplCommands) {
+            console.log('TSPL Commands (for manual printing):', response.tsplCommands);
+            this.errorMessage += ' Check console for TSPL commands.';
+          }
+        }
+      },
+      error: (err: any) => {
+        this.loading = false;
+        this.errorMessage = err.error?.error || 'Failed to print labels';
+        if (err.error?.tsplCommands) {
+          console.log('TSPL Commands (for manual printing):', err.error.tsplCommands);
+        }
+      }
+    });
+  }
+
+  // Legacy PDF download (backward compatibility)
   downloadPdf() {
     if (this.generatedBarcodes.length === 0) {
       this.errorMessage = 'No barcodes generated yet';
@@ -281,7 +325,7 @@ export class GenerateBarcodeComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.errorMessage = 'Failed to download PDF';
+        this.errorMessage = err.error?.error || 'Failed to download PDF';
       }
     });
   }

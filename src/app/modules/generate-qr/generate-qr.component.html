@@ -155,6 +155,15 @@
       <div class="action-buttons">
         <button 
           mat-raised-button 
+          color="primary"
+          (click)="printTSPL()" 
+          [disabled]="loading"
+          class="print-btn">
+          <mat-icon>print</mat-icon>
+          <span>{{ loading ? 'Printing...' : 'Print Labels' }}</span>
+        </button>
+        <button 
+          mat-raised-button 
           color="accent"
           (click)="downloadPdf()" 
           [disabled]="loading"
