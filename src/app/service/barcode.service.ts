@@ -38,6 +38,17 @@ export class BarcodeService {
     return this.http.post(`${this.apiUrl}/generate`, data);
   }
 
+  // TSPL Raw Printing (Direct to TSC TE244 printer)
+  printTSPL(data: { 
+    barcodes: string[]; 
+    user_id?: number;
+    printer_device?: string;
+    step_text?: string;  // Optional: STEP text (default: "STEP 12")
+    number_of_prints?: string;  // Optional: number of copies (default: "1")
+  }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/print/tspl`, data);
+  }
+
   downloadPdf(data: { barcodes: string[]; user_id?: number }): Observable<Blob> {
     return this.http.post(`${this.apiUrl}/download/pdf`, data, {
       responseType: 'blob'
