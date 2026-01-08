@@ -256,6 +256,7 @@ export class GenerateBarcodeComponent implements OnInit {
   }
 
   // TSPL Raw Printing (Main method - Direct to printer)
+  // Print TSPL - For user's laptop printer (downloads TSPL file)
   printTSPL() {
     if (this.generatedBarcodes.length === 0) {
       this.errorMessage = 'No barcodes generated yet';
@@ -276,26 +277,54 @@ export class GenerateBarcodeComponent implements OnInit {
     }).subscribe({
       next: (response) => {
         this.loading = false;
-        if (response.success) {
-          this.successMessage = `✅ ${response.message || `Successfully printed ${response.printed} label(s)`}`;
+        
+        // Always download TSPL file for user's laptop printing
+        if (response.tsplCommands) {
+          this.downloadTSPLFile(response.tsplCommands);
+          this.successMessage = `✅ TSPL file downloaded! Open it with your printer software to print on your laptop printer.`;
           this.errorMessage = '';
         } else {
-          this.errorMessage = `⚠️ ${response.error || 'Printing failed'}. ${response.message || ''}`;
-          // If TSPL commands are returned, show them for manual printing
-          if (response.tsplCommands) {
-            console.log('TSPL Commands (for manual printing):', response.tsplCommands);
-            this.errorMessage += ' Check console for TSPL commands.';
-          }
+          this.errorMessage = `⚠️ TSPL commands not generated. Please try again.`;
         }
       },
       error: (err: any) => {
         this.loading = false;
-        this.errorMessage = err.error?.error || 'Failed to print labels';
+        
+        // Even on error, try to download TSPL file if available
         if (err.error?.tsplCommands) {
-          console.log('TSPL Commands (for manual printing):', err.error.tsplCommands);
+          this.downloadTSPLFile(err.error.tsplCommands);
+          this.successMessage = `✅ TSPL file downloaded! Open it with your printer software to print on your laptop printer.`;
+          this.errorMessage = '';
+        } else {
+          this.errorMessage = err.error?.error || 'Failed to generate TSPL commands';
         }
       }
     });
+  }
+
+  // Download TSPL file for user's laptop printing
+  downloadTSPLFile(tsplCommands: string) {
+    try {
+      // Create blob from TSPL commands
+      const blob = new Blob([tsplCommands], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `barcode_labels_${new Date().getTime()}.tspl`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('✅ TSPL file downloaded successfully');
+    } catch (error) {
+      console.error('❌ Error downloading TSPL file:', error);
+      this.errorMessage = 'Failed to download TSPL file. Check console for TSPL commands.';
+    }
   }
 
   // Legacy PDF download (backward compatibility)
