@@ -272,7 +272,6 @@ export class GenerateBarcodeComponent implements OnInit {
     this.barcodeService.printTSPL({
       barcodes: this.generatedBarcodes.map(b => b.barcode_value || b),
       user_id: userId,
-      step_text: "STEP 12",  // Can be made configurable
       number_of_prints: "1"   // Can be made configurable
     }).subscribe({
       next: (response) => {
