@@ -163,6 +163,16 @@
             <mat-icon>print</mat-icon>
             <span>{{ loading ? 'Generating...' : 'Print Labels (Download TSPL)' }}</span>
           </button>
+          <button 
+            mat-raised-button 
+            color="warn"
+            (click)="directPrint()" 
+            [disabled]="loading"
+            class="direct-print-btn"
+            title="Direct Print via QZ Tray - Requires QZ Tray installed and running">
+            <mat-icon>print_disabled</mat-icon>
+            <span>{{ loading ? 'Printing...' : 'Direct Print' }}</span>
+          </button>
         <button 
           mat-raised-button 
           color="accent"
