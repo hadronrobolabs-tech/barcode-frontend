@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { KitService } from '../../service/kit.service';
 import { BarcodeService } from '../../service/barcode.service';
 import { AuthService } from '../../service/auth.service';
+import { QzTrayService } from '../../service/qz-tray.service';
 
 interface SelectedComponent {
   id: number;
@@ -45,7 +46,8 @@ export class GenerateBarcodeComponent implements OnInit {
   constructor(
     private kitService: KitService,
     private barcodeService: BarcodeService,
-    private authService: AuthService
+    private authService: AuthService,
+    private qzTrayService: QzTrayService
   ) {}
 
   ngOnInit() {
@@ -323,6 +325,106 @@ export class GenerateBarcodeComponent implements OnInit {
     } catch (error) {
       console.error('❌ Error downloading TSPL file:', error);
       this.errorMessage = 'Failed to download TSPL file. Check console for TSPL commands.';
+    }
+  }
+
+  // Direct Print via QZ Tray (Step 4-6: Get TSPL from backend → Send to QZ Tray → Print)
+  async directPrint() {
+    if (this.generatedBarcodes.length === 0) {
+      this.errorMessage = 'No barcodes generated yet';
+      return;
+    }
+
+    // Check if QZ Tray is available
+    if (!this.qzTrayService.isQzTrayAvailable()) {
+      this.errorMessage = 'QZ Tray is not available. Please install QZ Tray from https://qz.io and make sure it is running.';
+      return;
+    }
+
+    this.loading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+    const user = this.authService.getUser();
+    const userId = user?.id || null;
+
+    try {
+      // Step 4: Call backend API to get TSPL commands
+      this.barcodeService.printTSPL({
+        barcodes: this.generatedBarcodes.map(b => b.barcode_value || b),
+        user_id: userId,
+        number_of_prints: "1"
+      }).subscribe({
+        next: async (response) => {
+          try {
+            // Get TSPL commands from response
+            const tsplCommands = response.tsplCommands || (response as any).tsplCommands;
+            
+            if (!tsplCommands || tsplCommands.trim().length === 0) {
+              this.loading = false;
+              this.errorMessage = '⚠️ TSPL commands not generated. Please try again.';
+              return;
+            }
+
+            console.log('✅ TSPL commands received from backend');
+            console.log(`📄 TSPL length: ${tsplCommands.length} characters`);
+
+            // Step 5 & 6: Send TSPL to QZ Tray → QZ Tray prints directly
+            await this.qzTrayService.printTSPL(tsplCommands);
+            
+            this.loading = false;
+            this.successMessage = '✅ Labels printed successfully via QZ Tray!';
+            this.errorMessage = '';
+            
+            // Clear success message after 3 seconds
+            setTimeout(() => {
+              this.successMessage = '';
+            }, 3000);
+          } catch (printError: any) {
+            this.loading = false;
+            console.error('❌ QZ Tray printing error:', printError);
+            
+            // User-friendly error messages
+            if (printError.message && printError.message.includes('not running')) {
+              this.errorMessage = 'QZ Tray is not running. Please start QZ Tray application.';
+            } else if (printError.message && printError.message.includes('Permission denied')) {
+              this.errorMessage = 'Permission denied. Please click "Allow" in QZ Tray when prompted.';
+            } else if (printError.message && printError.message.includes('No printer found')) {
+              this.errorMessage = 'No printer found. Please connect a printer to your computer.';
+            } else {
+              this.errorMessage = `Printing failed: ${printError.message || printError}`;
+            }
+          }
+        },
+        error: async (err: any) => {
+          // Try to get TSPL from error response (in case backend returns error but still has TSPL)
+          const tsplCommands = err.error?.tsplCommands;
+          
+          if (tsplCommands && tsplCommands.trim().length > 0) {
+            try {
+              console.log('⚠️ Got TSPL from error response, attempting to print...');
+              await this.qzTrayService.printTSPL(tsplCommands);
+              this.loading = false;
+              this.successMessage = '✅ Labels printed successfully via QZ Tray!';
+              this.errorMessage = '';
+              setTimeout(() => {
+                this.successMessage = '';
+              }, 3000);
+              return;
+            } catch (printError: any) {
+              this.loading = false;
+              this.errorMessage = `Printing failed: ${printError.message || printError}`;
+              return;
+            }
+          }
+          
+          this.loading = false;
+          this.errorMessage = err.error?.error || 'Failed to generate TSPL commands';
+        }
+      });
+    } catch (error: any) {
+      this.loading = false;
+      console.error('❌ Direct print error:', error);
+      this.errorMessage = `Direct print failed: ${error.message || error}`;
     }
   }
 
