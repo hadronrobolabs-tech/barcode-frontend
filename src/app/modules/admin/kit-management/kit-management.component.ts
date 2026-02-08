@@ -365,13 +365,24 @@ export class KitManagementComponent implements OnInit {
   }
 
   updateKitComponent(comp: KitComponent) {
-    if (!this.selectedKit) return;
+    if (!this.selectedKit || !comp.component_id) return;
 
     this.loading = true;
-    this.kitService.updateComponent({
+    // Use updateComponentDetails for both main and sub-components (supports parent_component_id)
+    const componentData = {
+      name: comp.component_name || '',
+      category: comp.category_name || '',
+      is_packet: comp.is_packet || false,
+      packet_quantity: comp.packet_quantity ?? undefined,
+      description: comp.description || undefined,
+      parent_component_id: comp.parent_component_id ?? null
+    };
+    this.kitService.updateComponentDetails({
       kit_id: this.selectedKit.id,
-      category_id: comp.category_id,
-      required_quantity: comp.required_quantity
+      component_id: comp.component_id,
+      component: componentData,
+      required_quantity: comp.required_quantity,
+      barcode_prefix: comp.barcode_prefix || ''
     }).subscribe({
       next: (response) => {
         this.loading = false;
@@ -393,6 +404,7 @@ export class KitManagementComponent implements OnInit {
     this.editingComponent = comp;
     this.showEditComponentForm = true;
     this.showNewComponentForm = false;
+    this.showSubComponentForm = false;
     
     // Populate form with component data
     this.componentForm.patchValue({
