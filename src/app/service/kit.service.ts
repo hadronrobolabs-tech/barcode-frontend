@@ -27,6 +27,26 @@ export class KitService {
     return this.http.get(`${this.apiUrl}/${kitId}/components`);
   }
 
+  addSubComponent(kitId: number, parentComponentId: number, data: {
+    component: { name: string; category: string; is_packet?: boolean; packet_quantity?: number; description?: string };
+    required_quantity: number;
+    barcode_prefix: string;
+  }): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/${kitId}/components/${parentComponentId}/sub-components`,
+      data
+    );
+  }
+
+  removeSubComponent(kitId: number, parentComponentId: number, componentId: number, deleteComponent?: boolean): Observable<any> {
+    const params: { [key: string]: string } = {};
+    if (deleteComponent) params['delete_component'] = 'true';
+    return this.http.delete(
+      `${this.apiUrl}/${kitId}/components/${parentComponentId}/sub-components/${componentId}`,
+      Object.keys(params).length ? { params } : {}
+    );
+  }
+
   addComponent(data: {
     kit_id: number;
     component: {
@@ -68,6 +88,7 @@ export class KitService {
       is_packet?: boolean;
       packet_quantity?: number;
       description?: string;
+      parent_component_id?: number | null;
     };
     required_quantity: number;
     barcode_prefix: string;

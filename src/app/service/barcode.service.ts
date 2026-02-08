@@ -31,6 +31,7 @@ export class BarcodeService {
   generate(data: {
     product_id: number;
     component_id: number | null;
+    parent_component_id?: number | null;
     quantity: number;
     user_id?: number;
     object_type?: string;

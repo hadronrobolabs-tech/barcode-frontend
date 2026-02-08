@@ -119,7 +119,7 @@
           </button>
         </div>
 
-        <form *ngIf="showNewComponentForm || showEditComponentForm" [formGroup]="componentForm" (ngSubmit)="showEditComponentForm ? updateComponent() : addComponentToKit()" class="component-form">
+        <form *ngIf="showNewComponentForm || showEditComponentForm || showSubComponentForm" [formGroup]="componentForm" (ngSubmit)="showEditComponentForm ? updateComponent() : (showSubComponentForm ? addSubComponentToKit() : addComponentToKit())" class="component-form">
           <div class="form-row">
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Component Name</mat-label>
@@ -196,7 +196,7 @@
           <div class="button-group">
             <button mat-raised-button [color]="showEditComponentForm ? 'primary' : 'accent'" type="submit" [disabled]="loading || componentForm.invalid">
               <mat-icon>{{ showEditComponentForm ? 'save' : 'add' }}</mat-icon>
-              <span>{{ loading ? (showEditComponentForm ? 'Updating...' : 'Adding...') : (showEditComponentForm ? 'Update Component' : 'Create & Add Component') }}</span>
+              <span>{{ loading ? (showEditComponentForm ? 'Updating...' : 'Adding...') : (showEditComponentForm ? 'Update Component' : (showSubComponentForm ? 'Create & Add Sub-component' : 'Create & Add Component')) }}</span>
             </button>
             <button mat-stroked-button type="button" (click)="resetComponentForm()" [disabled]="loading">
               <mat-icon>cancel</mat-icon>
@@ -205,9 +205,9 @@
           </div>
         </form>
 
-        <div *ngIf="!showNewComponentForm && !showEditComponentForm" class="info-message">
+        <div *ngIf="!showNewComponentForm && !showEditComponentForm && !showSubComponentForm" class="info-message">
           <mat-icon>info</mat-icon>
-          <p>Click "Create New Component" to add a component to this kit. Components are created and added to the kit in one step.</p>
+          <p>Click "Create New Component" to add a main component, or "Add Sub-component" (⊕) on any component to add sub-components (up to 3 levels).</p>
         </div>
       </div>
 
@@ -218,7 +218,8 @@
           <ng-container matColumnDef="component">
             <th mat-header-cell *matHeaderCellDef>Component</th>
             <td mat-cell *matCellDef="let comp">
-              <div class="component-info">
+              <div class="component-info" [style.padding-left.px]="((comp.level || 1) - 1) * 24">
+                <span *ngIf="(comp.level || 1) > 1" class="sub-prefix">└ </span>
                 <div class="component-name">{{ comp.component_name || comp.category_name }}</div>
                 <div class="component-category" *ngIf="comp.component_name">
                   <mat-chip>{{ comp.category_name }}</mat-chip>
@@ -250,6 +251,15 @@
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef>Actions</th>
             <td mat-cell *matCellDef="let comp">
+              <button 
+                *ngIf="comp.component_id && (comp.level || 1) < 3"
+                mat-icon-button 
+                color="accent" 
+                (click)="openAddSubComponentForm(comp)" 
+                title="Add Sub-component"
+                [disabled]="loading">
+                <mat-icon>add_circle</mat-icon>
+              </button>
               <button 
                 *ngIf="comp.component_id"
                 mat-icon-button 

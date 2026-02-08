@@ -43,7 +43,7 @@
                 [disabled]="loading">
                 <mat-option [value]="null">Select Component</mat-option>
                 <mat-option *ngFor="let comp of componentOptions" [value]="comp.id">
-                  {{ comp.name }} ({{ comp.category_name }})
+                  {{ comp.display_label || comp.name }} ({{ comp.category_name }})
                 </mat-option>
               </mat-select>
               <mat-icon matPrefix>inventory</mat-icon>
