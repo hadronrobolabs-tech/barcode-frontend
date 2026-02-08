@@ -16,6 +16,9 @@ interface ComponentOption {
   id: number;
   name: string;
   category_name: string;
+  parent_component_id?: number | null;
+  display_label?: string;
+  level?: number;
 }
 
 @Component({
@@ -88,12 +91,15 @@ export class GenerateBarcodeComponent implements OnInit {
       next: (response) => {
         this.loading = false;
         if (response.success && response.data && response.data.length > 0) {
-          // Map components for dropdown
+          // Map components for dropdown (flat with parent_component_id, display_label)
           this.kitComponents = response.data;
           this.componentOptions = response.data.map((comp: any) => ({
-            id: comp.id,
+            id: comp.id || comp.component_id,
             name: comp.name || comp.component_name,
-            category_name: comp.category_name || comp.category_prefix || comp.category
+            category_name: comp.category_name || comp.category_prefix || comp.category,
+            parent_component_id: comp.parent_component_id ?? null,
+            display_label: comp.display_label || comp.name || comp.component_name,
+            level: comp.level
           }));
           this.selectedComponents = response.data.map((comp: any) => ({
             id: comp.id,
@@ -195,9 +201,11 @@ export class GenerateBarcodeComponent implements OnInit {
     if (this.selectedComponentId && !this.generateBoxBarcode) {
       // Generate component barcodes
       for (let i = 0; i < this.componentQuantity; i++) {
+        const selectedOpt = this.componentOptions.find(o => o.id === this.selectedComponentId);
         this.barcodeService.generate({
           product_id: this.selectedKitId!,
           component_id: this.selectedComponentId!,
+          parent_component_id: selectedOpt?.parent_component_id ?? null,
           quantity: 1,
           user_id: userId,
           object_type: 'COMPONENT'
