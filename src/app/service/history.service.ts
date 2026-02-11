@@ -76,5 +76,30 @@ export class HistoryService {
   getBarcodeHistory(barcodeId: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/barcode/${barcodeId}`);
   }
+
+  exportHistory(filters?: {
+    barcode_id?: number;
+    scanned_by?: number;
+    scan_action?: string;
+    status?: string;
+    search?: string;
+    kit_id?: number;
+    start_date?: string;
+    end_date?: string;
+  }): Observable<Blob> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach(key => {
+        const value = filters[key as keyof typeof filters];
+        if (value !== undefined) {
+          params = params.set(key, value.toString());
+        }
+      });
+    }
+    return this.http.get(`${this.apiUrl}/export`, {
+      params,
+      responseType: 'blob'
+    });
+  }
 }
 

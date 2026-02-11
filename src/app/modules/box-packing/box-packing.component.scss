@@ -6,6 +6,36 @@
 .page-header {
   margin-bottom: 24px;
 
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+
+    .export-section {
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+
+      .export-filters {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+
+        .date-field {
+          width: 160px;
+        }
+      }
+
+      .export-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 56px;
+      }
+    }
+  }
+
   h1 {
     font-size: 32px;
     font-weight: 600;

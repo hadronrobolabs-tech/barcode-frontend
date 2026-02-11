@@ -24,7 +24,7 @@ export class DataHistoryComponent implements OnInit {
   kits: any[] = [];
   startDate = '';
   endDate = '';
-  displayedColumns: string[] = ['barcode', 'component', 'category', 'product', 'scannedBy', 'time', 'status', 'remark'];
+  displayedColumns: string[] = ['barcode', 'component', 'category', 'product', 'scannedBy', 'time', 'status', 'boxHistory', 'remark'];
   dataSource = new MatTableDataSource<any>([]);
 
   constructor(
@@ -144,15 +144,70 @@ export class DataHistoryComponent implements OnInit {
     this.loadStatistics();
   }
 
+  exportHistory() {
+    this.loading = true;
+    this.errorMessage = '';
+
+    const filters: any = {};
+
+    if (this.searchTerm.trim()) {
+      filters.search = this.searchTerm.trim();
+    }
+
+    if (this.statusFilter !== 'all') {
+      filters.status = this.statusFilter.toUpperCase();
+    }
+
+    if (this.startDate) {
+      filters.start_date = this.startDate;
+    }
+
+    if (this.endDate) {
+      filters.end_date = this.endDate;
+    }
+
+    if (this.selectedKitId) {
+      filters.kit_id = this.selectedKitId;
+    }
+
+    this.historyService.exportHistory(filters).subscribe({
+      next: (blob: Blob) => {
+        this.loading = false;
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const fileName = `history_export_${this.selectedKitId ? `kit_${this.selectedKitId}_` : ''}${new Date().getTime()}.csv`;
+        link.download = fileName;
+        link.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        this.loading = false;
+        this.errorMessage = err.error?.error || 'Failed to export history';
+      }
+    });
+  }
+
   getStatusClass(status: string): string {
-    const statusUpper = status?.toUpperCase() || '';
+    if (!status) return 'badge--pending';
+    const statusUpper = status.toUpperCase();
+    
+    // Check for success statuses
     if (statusUpper === 'SUCCESS' || statusUpper === 'SCANNED' || statusUpper === 'BOXED') {
       return 'badge--success';
-    } else if (statusUpper === 'PENDING' || statusUpper === 'CREATED') {
+    }
+    
+    // Check for pending statuses
+    if (statusUpper === 'PENDING' || statusUpper === 'CREATED') {
       return 'badge--pending';
-    } else if (statusUpper === 'FAILED' || statusUpper === 'SCRAPPED') {
+    }
+    
+    // Check for failed statuses
+    if (statusUpper === 'FAILED' || statusUpper === 'SCRAPPED') {
       return 'badge--failed';
     }
+    
+    // Default to pending for unknown statuses
     return 'badge--pending';
   }
 }

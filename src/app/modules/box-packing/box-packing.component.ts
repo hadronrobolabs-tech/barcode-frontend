@@ -27,6 +27,8 @@ export class BoxPackingComponent implements OnInit, AfterViewInit {
   packingStatus: any = null;
   displayedColumns: string[] = ['index', 'component', 'category', 'required', 'scanned', 'scannedBarcodes', 'status', 'action'];
   requirementsDataSource = new MatTableDataSource<any>([]);
+  exportStartDate = '';
+  exportEndDate = '';
 
   constructor(
     private kitService: KitService,
@@ -430,6 +432,46 @@ export class BoxPackingComponent implements OnInit, AfterViewInit {
     this.packingStatus = null;
     this.errorMessage = '';
     this.successMessage = '';
+    this.exportStartDate = '';
+    this.exportEndDate = '';
+  }
+
+  exportBoxPackingData() {
+    this.loading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    const filters: any = {};
+    if (this.selectedKitId) {
+      filters.kit_id = this.selectedKitId;
+    }
+    if (this.exportStartDate) {
+      filters.start_date = this.exportStartDate;
+    }
+    if (this.exportEndDate) {
+      filters.end_date = this.exportEndDate;
+    }
+
+    this.boxService.exportBoxPacking(filters).subscribe({
+      next: (blob: Blob) => {
+        this.loading = false;
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const fileName = `box_packing_export_${this.selectedKitId ? `kit_${this.selectedKitId}_` : ''}${new Date().getTime()}.csv`;
+        link.download = fileName;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        this.successMessage = 'Box packing data exported successfully!';
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 3000);
+      },
+      error: (err) => {
+        this.loading = false;
+        this.errorMessage = err.error?.error || 'Failed to export box packing data';
+      }
+    });
   }
 
   areAllComponentsScanned(): boolean {
