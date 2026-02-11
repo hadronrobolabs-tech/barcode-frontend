@@ -151,7 +151,23 @@ export class ComponentScanComponent implements AfterViewInit {
               
               const remaining = (parentItem.requiredChildBarcodes?.length || 0) - parentItem.scannedChildBarcodes.length;
               if (remaining > 0) {
-                this.successMessage = `Child barcode scanned! ${remaining} more child barcode(s) required for parent "${parentItem.componentName}".`;
+                // Get remaining child component names
+                const remainingChildren = parentItem.childComponents?.filter((child: ChildComponent) => {
+                  const scannedForThisChild = parentItem.scannedChildBarcodes?.filter(bc => 
+                    child.available_barcodes?.some(ab => ab.barcode_value === bc)
+                  ).length || 0;
+                  return scannedForThisChild < child.required_quantity;
+                }) || [];
+                
+                const remainingNames = remainingChildren.map((child: ChildComponent) => {
+                  const scannedForThisChild = parentItem.scannedChildBarcodes?.filter(bc => 
+                    child.available_barcodes?.some(ab => ab.barcode_value === bc)
+                  ).length || 0;
+                  const needed = child.required_quantity - scannedForThisChild;
+                  return `${child.component_name} (${needed} more)`;
+                }).join(', ');
+                
+                this.successMessage = `Child barcode scanned! Remaining: ${remainingNames} for parent "${parentItem.componentName}".`;
               } else {
                 this.successMessage = `All child barcodes scanned for parent "${parentItem.componentName}"! You can now submit.`;
               }
@@ -188,7 +204,12 @@ export class ComponentScanComponent implements AfterViewInit {
           this.dataSource.data = [...this.scanHistory];
           
           if (isParent) {
-            this.successMessage = `Parent component detected! Please scan ${requiredChildBarcodes.length} child sub-component barcode(s) before submitting.`;
+            // Build child names list for message
+            const childNames = childComponents.map((child: ChildComponent) => 
+              `${child.component_name} (Qty: ${child.required_quantity})`
+            ).join(', ');
+            const totalRequired = requiredChildBarcodes.length;
+            this.successMessage = `Parent component detected! Required child components: ${childNames}. Please scan ${totalRequired} child barcode(s) before submitting.`;
           } else {
             this.successMessage = 'Barcode validated! Click "Submit Scans" to save to database.';
           }
@@ -235,7 +256,23 @@ export class ComponentScanComponent implements AfterViewInit {
         );
         
         if (missingBarcodes.length > 0) {
-          this.errorMessage = `Parent component "${item.componentName}" requires ${missingBarcodes.length} more child sub-component barcode(s) to be scanned before submitting.`;
+          // Get missing child component names
+          const missingChildren = item.childComponents?.filter((child: ChildComponent) => {
+            const scannedForThisChild = item.scannedChildBarcodes?.filter(bc => 
+              child.available_barcodes?.some(ab => ab.barcode_value === bc)
+            ).length || 0;
+            return scannedForThisChild < child.required_quantity;
+          }) || [];
+          
+          const missingNames = missingChildren.map((child: ChildComponent) => {
+            const scannedForThisChild = item.scannedChildBarcodes?.filter(bc => 
+              child.available_barcodes?.some(ab => ab.barcode_value === bc)
+            ).length || 0;
+            const needed = child.required_quantity - scannedForThisChild;
+            return `${child.component_name} (${needed} more)`;
+          }).join(', ');
+          
+          this.errorMessage = `Parent component "${item.componentName}" requires more child barcodes: ${missingNames}. Please scan before submitting.`;
           return;
         }
       }
@@ -369,6 +406,14 @@ export class ComponentScanComponent implements AfterViewInit {
   clearMessages() {
     this.errorMessage = '';
     this.successMessage = '';
+  }
+
+  // Get scanned count for a specific child component
+  getScannedCountForChild(item: ScanItem, child: ChildComponent): number {
+    if (!item.scannedChildBarcodes || !child.available_barcodes) return 0;
+    return item.scannedChildBarcodes.filter(bc => 
+      child.available_barcodes.some(ab => ab.barcode_value === bc)
+    ).length;
   }
 
   // Getters for template

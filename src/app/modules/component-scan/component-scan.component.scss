@@ -125,6 +125,106 @@
       color: #ffc107;
     }
   }
+
+  .child-components-section {
+    margin-top: 20px;
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+
+    .child-components-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+
+      mat-icon {
+        color: #1976d2;
+      }
+    }
+
+    .child-components-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .child-component-item {
+        padding: 12px;
+        background-color: white;
+        border-radius: 6px;
+        border: 1px solid #e0e0e0;
+
+        .child-info-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+
+          .child-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+
+            strong {
+              font-size: 15px;
+              color: #333;
+            }
+
+            .child-category {
+              font-size: 13px;
+              color: #666;
+            }
+          }
+
+          .child-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+
+            .child-quantity {
+              color: #666;
+            }
+
+            .child-scanned {
+              color: #1976d2;
+              font-weight: 500;
+            }
+
+            .check-icon {
+              color: #28a745;
+              font-size: 20px;
+              width: 20px;
+              height: 20px;
+            }
+          }
+        }
+      }
+    }
+
+    .child-progress-summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding: 12px;
+      background-color: #e3f2fd;
+      border-radius: 6px;
+      color: #1976d2;
+      font-size: 14px;
+      font-weight: 500;
+
+      mat-icon {
+        color: #1976d2;
+      }
+    }
+  }
 }
 
 .history-card {

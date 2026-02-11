@@ -37,6 +37,29 @@
   margin-bottom: 24px;
 }
 
+.box-export-card {
+  margin-bottom: 24px;
+
+  .box-export-filters {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+
+    .date-field {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .export-box-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 200px;
+    }
+  }
+}
+
 .filters-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

@@ -1,38 +1,8 @@
 <div class="page-container">
   <div class="page-header">
-    <div class="header-content">
-      <div>
-        <h1>Box Packing</h1>
-        <p class="subtitle">Pack kits with component verification</p>
-      </div>
-      <div class="export-section">
-        <div class="export-filters">
-          <mat-form-field appearance="outline" class="date-field">
-            <mat-label>Start Date</mat-label>
-            <input 
-              matInput
-              type="date" 
-              [(ngModel)]="exportStartDate" />
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="date-field">
-            <mat-label>End Date</mat-label>
-            <input 
-              matInput
-              type="date" 
-              [(ngModel)]="exportEndDate" />
-          </mat-form-field>
-        </div>
-        <button 
-          mat-raised-button 
-          color="accent"
-          (click)="exportBoxPackingData()" 
-          [disabled]="loading"
-          class="export-btn"
-          matTooltip="Export box packing data (Box ID, Component, Barcodes)">
-          <mat-icon>download</mat-icon>
-          <span>{{ loading ? 'Exporting...' : 'Export Data' }}</span>
-        </button>
-      </div>
+    <div>
+      <h1>Box Packing</h1>
+      <p class="subtitle">Pack kits with component verification</p>
     </div>
   </div>
 
