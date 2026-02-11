@@ -114,7 +114,76 @@ export class ComponentScanComponent implements AfterViewInit {
             return;
           }
 
-          // Check if this is a parent component with child sub-components
+          // FIRST: Check if this barcode is a child of a pending parent component
+          // This check happens BEFORE checking if current barcode is a parent
+          let parentItem = null;
+          
+          // Check by matching barcode value in any pending parent's requiredChildBarcodes
+          parentItem = this.scanHistory.find(item => 
+            item.pending && 
+            item.isParent && 
+            item.requiredChildBarcodes?.includes(barcodeValue)
+          );
+          
+          // If not found by barcode value, check by matching component_id
+          if (!parentItem && data.component?.id) {
+            parentItem = this.scanHistory.find(item => {
+              if (!item.pending || !item.isParent || !item.childComponents) return false;
+              return item.childComponents.some((child: ChildComponent) => 
+                child.component_id === data.component.id
+              );
+            });
+          }
+          
+          // If this is a child barcode of a pending parent
+          if (parentItem) {
+            // Add to parent's scanned list (DO NOT add as separate item)
+            if (!parentItem.scannedChildBarcodes) {
+              parentItem.scannedChildBarcodes = [];
+            }
+            if (!parentItem.scannedChildBarcodes.includes(barcodeValue)) {
+              parentItem.scannedChildBarcodes.push(barcodeValue);
+              // Force update the scanHistory array reference to trigger change detection
+              this.scanHistory = [...this.scanHistory];
+              this.dataSource.data = [...this.scanHistory];
+              
+              // Store parentItem in a const to help TypeScript narrowing
+              const currentParent = parentItem;
+              const scannedBarcodes = currentParent.scannedChildBarcodes || [];
+              const remaining = (currentParent.requiredChildBarcodes?.length || 0) - scannedBarcodes.length;
+              if (remaining > 0) {
+                // Get remaining child component names
+                const remainingChildren = currentParent.childComponents?.filter((child: ChildComponent) => {
+                  const scannedForThisChild = scannedBarcodes.filter(bc => 
+                    child.available_barcodes?.some(ab => ab.barcode_value === bc)
+                  ).length || 0;
+                  return scannedForThisChild < child.required_quantity;
+                }) || [];
+                
+                const remainingNames = remainingChildren.map((child: ChildComponent) => {
+                  const scannedForThisChild = scannedBarcodes.filter(bc => 
+                    child.available_barcodes?.some(ab => ab.barcode_value === bc)
+                  ).length || 0;
+                  const needed = child.required_quantity - scannedForThisChild;
+                  return `${child.component_name} (${needed} more)`;
+                }).join(', ');
+                
+                this.successMessage = `Child barcode scanned! Remaining: ${remainingNames} for parent "${currentParent.componentName}".`;
+              } else {
+                this.successMessage = `All child barcodes scanned for parent "${currentParent.componentName}"! You can now submit.`;
+              }
+              this.barcodeInput = '';
+              this.focusInput();
+              return; // IMPORTANT: Return here, don't add child as separate item
+            } else {
+              this.errorMessage = 'This child barcode has already been scanned for the parent component.';
+              this.barcodeInput = '';
+              this.focusInput();
+              return;
+            }
+          }
+
+          // SECOND: Check if this is a parent component with child sub-components
           const childComponents = data.childComponents || [];
           const isParent = childComponents.length > 0;
           
@@ -131,55 +200,6 @@ export class ComponentScanComponent implements AfterViewInit {
                 }
               }
             });
-          }
-
-          // Check if this barcode is a child of a pending parent component
-          const parentItem = this.scanHistory.find(item => 
-            item.pending && 
-            item.isParent && 
-            item.requiredChildBarcodes?.includes(barcodeValue)
-          );
-          
-          if (parentItem) {
-            // This is a child barcode - add to parent's scanned list
-            if (!parentItem.scannedChildBarcodes) {
-              parentItem.scannedChildBarcodes = [];
-            }
-            if (!parentItem.scannedChildBarcodes.includes(barcodeValue)) {
-              parentItem.scannedChildBarcodes.push(barcodeValue);
-              this.dataSource.data = [...this.scanHistory];
-              
-              const remaining = (parentItem.requiredChildBarcodes?.length || 0) - parentItem.scannedChildBarcodes.length;
-              if (remaining > 0) {
-                // Get remaining child component names
-                const remainingChildren = parentItem.childComponents?.filter((child: ChildComponent) => {
-                  const scannedForThisChild = parentItem.scannedChildBarcodes?.filter(bc => 
-                    child.available_barcodes?.some(ab => ab.barcode_value === bc)
-                  ).length || 0;
-                  return scannedForThisChild < child.required_quantity;
-                }) || [];
-                
-                const remainingNames = remainingChildren.map((child: ChildComponent) => {
-                  const scannedForThisChild = parentItem.scannedChildBarcodes?.filter(bc => 
-                    child.available_barcodes?.some(ab => ab.barcode_value === bc)
-                  ).length || 0;
-                  const needed = child.required_quantity - scannedForThisChild;
-                  return `${child.component_name} (${needed} more)`;
-                }).join(', ');
-                
-                this.successMessage = `Child barcode scanned! Remaining: ${remainingNames} for parent "${parentItem.componentName}".`;
-              } else {
-                this.successMessage = `All child barcodes scanned for parent "${parentItem.componentName}"! You can now submit.`;
-              }
-              this.barcodeInput = '';
-              this.focusInput();
-              return;
-            } else {
-              this.errorMessage = 'This child barcode has already been scanned for the parent component.';
-              this.barcodeInput = '';
-              this.focusInput();
-              return;
-            }
           }
 
           const scannedItem: ScanItem = {
@@ -248,24 +268,28 @@ export class ComponentScanComponent implements AfterViewInit {
     }
 
     // Check if any parent components have unscanned child barcodes
+    // IMPORTANT: Only check parent components, normal components can submit without validation
     for (const item of pendingScans) {
+      // Only validate if it's a parent component with required child barcodes
       if (item.isParent && item.requiredChildBarcodes && item.requiredChildBarcodes.length > 0) {
         const scannedChildBarcodes = item.scannedChildBarcodes || [];
+        
+        // Check if all required child barcodes have been scanned
         const missingBarcodes = item.requiredChildBarcodes.filter(
           barcode => !scannedChildBarcodes.includes(barcode)
         );
         
         if (missingBarcodes.length > 0) {
-          // Get missing child component names
+          // Get missing child component names for better error message
           const missingChildren = item.childComponents?.filter((child: ChildComponent) => {
-            const scannedForThisChild = item.scannedChildBarcodes?.filter(bc => 
+            const scannedForThisChild = scannedChildBarcodes.filter(bc => 
               child.available_barcodes?.some(ab => ab.barcode_value === bc)
             ).length || 0;
             return scannedForThisChild < child.required_quantity;
           }) || [];
           
           const missingNames = missingChildren.map((child: ChildComponent) => {
-            const scannedForThisChild = item.scannedChildBarcodes?.filter(bc => 
+            const scannedForThisChild = scannedChildBarcodes.filter(bc => 
               child.available_barcodes?.some(ab => ab.barcode_value === bc)
             ).length || 0;
             const needed = child.required_quantity - scannedForThisChild;
@@ -273,9 +297,10 @@ export class ComponentScanComponent implements AfterViewInit {
           }).join(', ');
           
           this.errorMessage = `Parent component "${item.componentName}" requires more child barcodes: ${missingNames}. Please scan before submitting.`;
-          return;
+          return; // Stop submission if any parent is missing child barcodes
         }
       }
+      // If not a parent component (isParent is false or undefined), skip validation - allow normal flow
     }
 
     this.loading = true;
