@@ -50,5 +50,25 @@ export class BoxService {
   }): Observable<any> {
     return this.http.post(`${this.apiUrl}/complete`, data);
   }
+
+  exportBoxPacking(filters?: {
+    kit_id?: number;
+    start_date?: string;
+    end_date?: string;
+  }): Observable<Blob> {
+    // Filters are already handled in the method signature
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach(key => {
+        if (filters[key as keyof typeof filters] !== undefined) {
+          params = params.set(key, filters[key as keyof typeof filters]!.toString());
+        }
+      });
+    }
+    return this.http.get(`${this.apiUrl}/export`, {
+      params,
+      responseType: 'blob'
+    });
+  }
 }
 

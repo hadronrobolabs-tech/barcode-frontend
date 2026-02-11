@@ -80,6 +80,37 @@
         <mat-icon>schedule</mat-icon>
         <span>Pending - Will be saved when you click "Submit Scans"</span>
       </div>
+      
+      <!-- Show child sub-components if this is a parent component -->
+      <div *ngIf="scannedItem.isParent && scannedItem.childComponents && scannedItem.childComponents.length > 0" class="child-components-section">
+        <div class="child-components-header">
+          <mat-icon>account_tree</mat-icon>
+          <span class="header-text">Child Sub-Components Required:</span>
+        </div>
+        <div class="child-components-list">
+          <div *ngFor="let child of scannedItem.childComponents" class="child-component-item">
+            <div class="child-info">
+              <strong>{{ child.component_name }}</strong>
+              <span class="child-category">({{ child.category }})</span>
+              <span class="child-quantity">Qty: {{ child.required_quantity }}</span>
+            </div>
+            <div class="child-barcodes">
+              <span *ngFor="let barcode of child.available_barcodes.slice(0, child.required_quantity)" 
+                    class="barcode-chip"
+                    [class.scanned]="scannedItem.scannedChildBarcodes?.includes(barcode.barcode_value)">
+                {{ barcode.barcode_value }}
+                <mat-icon *ngIf="scannedItem.scannedChildBarcodes?.includes(barcode.barcode_value)" class="check-icon">check_circle</mat-icon>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="child-progress" *ngIf="scannedItem.requiredChildBarcodes && scannedItem.requiredChildBarcodes.length > 0">
+          <mat-icon>info</mat-icon>
+          <span>
+            Scanned: {{ scannedItem.scannedChildBarcodes?.length || 0 }} / {{ scannedItem.requiredChildBarcodes.length }} child barcodes
+          </span>
+        </div>
+      </div>
     </mat-card-content>
   </mat-card>
 
