@@ -15,6 +15,7 @@ export class ScanService {
     barcode: string;
     box_barcode?: string;
     user_id?: number;
+    parent_barcode_id?: number; // Optional: for linking child barcode to parent
   }): Observable<any> {
     return this.http.post(this.apiUrl, data);
   }
