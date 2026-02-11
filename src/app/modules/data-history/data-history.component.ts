@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { HistoryService } from '../../service/history.service';
 import { KitService } from '../../service/kit.service';
+import { BoxService } from '../../service/box.service';
 import { MatTableDataSource } from '@angular/material/table';
 
 @Component({
@@ -24,12 +25,15 @@ export class DataHistoryComponent implements OnInit {
   kits: any[] = [];
   startDate = '';
   endDate = '';
-  displayedColumns: string[] = ['barcode', 'component', 'category', 'product', 'scannedBy', 'time', 'status', 'boxHistory', 'remark'];
+  exportBoxStartDate = '';
+  exportBoxEndDate = '';
+  displayedColumns: string[] = ['barcode', 'component', 'category', 'product', 'scannedBy', 'time', 'status', 'remark'];
   dataSource = new MatTableDataSource<any>([]);
 
   constructor(
     private historyService: HistoryService,
-    private kitService: KitService
+    private kitService: KitService,
+    private boxService: BoxService
   ) {}
 
   ngOnInit() {
@@ -135,6 +139,8 @@ export class DataHistoryComponent implements OnInit {
     this.selectedKitId = null;
     this.startDate = '';
     this.endDate = '';
+    this.exportBoxStartDate = '';
+    this.exportBoxEndDate = '';
     this.loadHistory();
     this.loadStatistics();
   }
@@ -188,26 +194,59 @@ export class DataHistoryComponent implements OnInit {
     });
   }
 
-  getStatusClass(status: string): string {
-    if (!status) return 'badge--pending';
-    const statusUpper = status.toUpperCase();
+  exportBoxPackingData() {
+    this.loading = true;
+    this.errorMessage = '';
+
+    const filters: any = {};
+    if (this.selectedKitId) {
+      filters.kit_id = this.selectedKitId;
+    }
+    if (this.exportBoxStartDate) {
+      filters.start_date = this.exportBoxStartDate;
+    }
+    if (this.exportBoxEndDate) {
+      filters.end_date = this.exportBoxEndDate;
+    }
+
+    this.boxService.exportBoxPacking(filters).subscribe({
+      next: (blob: Blob) => {
+        this.loading = false;
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const fileName = `box_packing_export_${this.selectedKitId ? `kit_${this.selectedKitId}_` : ''}${new Date().getTime()}.csv`;
+        link.download = fileName;
+        link.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        this.loading = false;
+        this.errorMessage = err.error?.error || 'Failed to export box packing data';
+      }
+    });
+  }
+
+  getStatusClass(scanAction: string): string {
+    if (!scanAction) return 'badge--pending';
+    const actionUpper = scanAction.toUpperCase();
     
-    // Check for success statuses
-    if (statusUpper === 'SUCCESS' || statusUpper === 'SCANNED' || statusUpper === 'BOXED') {
+    // Check for success actions (scanned or boxed)
+    if (actionUpper === 'SCANNED' || actionUpper === 'BOXED' || actionUpper === 'PRINTED') {
       return 'badge--success';
     }
     
-    // Check for pending statuses
-    if (statusUpper === 'PENDING' || statusUpper === 'CREATED') {
+    // Check for pending/generated actions
+    if (actionUpper === 'GENERATED' || actionUpper === 'CREATED' || actionUpper === 'DOWNLOADED') {
       return 'badge--pending';
     }
     
-    // Check for failed statuses
-    if (statusUpper === 'FAILED' || statusUpper === 'SCRAPPED') {
+    // Check for failed actions
+    if (actionUpper === 'SCRAPPED' || actionUpper === 'FAILED') {
       return 'badge--failed';
     }
     
-    // Default to pending for unknown statuses
+    // Default to pending for unknown actions
     return 'badge--pending';
   }
 }
