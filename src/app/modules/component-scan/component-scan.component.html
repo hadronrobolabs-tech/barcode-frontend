@@ -106,10 +106,10 @@
             </div>
           </div>
         </div>
-        <div class="child-progress-summary" *ngIf="scannedItem.requiredChildBarcodes && scannedItem.requiredChildBarcodes.length > 0">
+        <div class="child-progress-summary" *ngIf="scannedItem.childComponents && scannedItem.childComponents.length > 0">
           <mat-icon>info</mat-icon>
           <span>
-            Total Progress: {{ scannedItem.scannedChildBarcodes?.length || 0 }} / {{ scannedItem.requiredChildBarcodes.length }} child barcodes scanned
+            Total Progress: {{ getTotalScannedCount(scannedItem) }} / {{ getTotalRequiredCount(scannedItem) }} child barcodes scanned
           </span>
         </div>
       </div>
