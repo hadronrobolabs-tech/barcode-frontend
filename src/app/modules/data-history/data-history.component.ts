@@ -27,7 +27,7 @@ export class DataHistoryComponent implements OnInit {
   endDate = '';
   exportBoxStartDate = '';
   exportBoxEndDate = '';
-  displayedColumns: string[] = ['barcode', 'component', 'category', 'product', 'scannedBy', 'time', 'status', 'boxHistory', 'remark'];
+  displayedColumns: string[] = ['barcode', 'component', 'category', 'product', 'scannedBy', 'time', 'status', 'remark'];
   dataSource = new MatTableDataSource<any>([]);
 
   constructor(
@@ -227,31 +227,26 @@ export class DataHistoryComponent implements OnInit {
     });
   }
 
-  getStatusClass(status: string): string {
-    if (!status) return 'badge--pending';
-    const statusUpper = status.toUpperCase();
+  getStatusClass(scanAction: string): string {
+    if (!scanAction) return 'badge--pending';
+    const actionUpper = scanAction.toUpperCase();
     
-    // Check for success statuses (scanned or boxed)
-    if (statusUpper === 'SCANNED' || statusUpper === 'BOXED' || statusUpper === 'SUCCESS') {
+    // Check for success actions (scanned or boxed)
+    if (actionUpper === 'SCANNED' || actionUpper === 'BOXED' || actionUpper === 'PRINTED') {
       return 'badge--success';
     }
     
-    // Check for pending/created statuses
-    if (statusUpper === 'CREATED' || statusUpper === 'PENDING' || statusUpper === 'GENERATED') {
+    // Check for pending/generated actions
+    if (actionUpper === 'GENERATED' || actionUpper === 'CREATED' || actionUpper === 'DOWNLOADED') {
       return 'badge--pending';
     }
     
-    // Check for failed/scrapped statuses
-    if (statusUpper === 'SCRAPPED' || statusUpper === 'FAILED') {
+    // Check for failed actions
+    if (actionUpper === 'SCRAPPED' || actionUpper === 'FAILED') {
       return 'badge--failed';
     }
     
-    // Check for printed status (if used as status)
-    if (statusUpper === 'PRINTED') {
-      return 'badge--success';
-    }
-    
-    // Default to pending for unknown statuses
+    // Default to pending for unknown actions
     return 'badge--pending';
   }
 }
