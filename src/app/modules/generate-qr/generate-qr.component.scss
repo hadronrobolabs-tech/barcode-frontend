@@ -275,6 +275,24 @@
   font-size: 14px;
 }
 
+.printer-select-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+
+  .printer-label {
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.7);
+  }
+
+  .printer-field {
+    min-width: 220px;
+    max-width: 320px;
+  }
+}
+
 .action-buttons {
   display: flex;
   gap: 16px;

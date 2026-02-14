@@ -46,6 +46,11 @@ export class GenerateBarcodeComponent implements OnInit {
   barcodeListInput: string = '';
   showBarcodeLookup: boolean = false;
 
+  // QZ Tray: printer list and selected printer (for Direct Print)
+  availablePrinters: string[] = [];
+  selectedPrinterName: string | null = null;
+  loadingPrinters = false;
+
   constructor(
     private kitService: KitService,
     private barcodeService: BarcodeService,
@@ -336,6 +341,27 @@ export class GenerateBarcodeComponent implements OnInit {
     }
   }
 
+  // Load printers from QZ Tray (for Direct Print dropdown)
+  async loadPrinters() {
+    if (!this.qzTrayService.isQzTrayAvailable()) {
+      this.errorMessage = 'QZ Tray is not available. Install from https://qz.io and ensure it is running.';
+      return;
+    }
+    this.loadingPrinters = true;
+    this.errorMessage = '';
+    try {
+      const printers = await this.qzTrayService.findPrinters();
+      this.availablePrinters = printers || [];
+      if (this.availablePrinters.length > 0 && !this.selectedPrinterName) {
+        this.selectedPrinterName = this.availablePrinters[0];
+      }
+    } catch (e: any) {
+      this.errorMessage = e?.message || 'Failed to load printers';
+    } finally {
+      this.loadingPrinters = false;
+    }
+  }
+
   // Direct Print via QZ Tray (Step 4-6: Get TSPL from backend → Send to QZ Tray → Print)
   async directPrint() {
     if (this.generatedBarcodes.length === 0) {
@@ -349,11 +375,17 @@ export class GenerateBarcodeComponent implements OnInit {
       return;
     }
 
+    // If no printer list yet, load it so user can select (or use first)
+    if (this.availablePrinters.length === 0) {
+      await this.loadPrinters();
+    }
+
     this.loading = true;
     this.errorMessage = '';
     this.successMessage = '';
     const user = this.authService.getUser();
     const userId = user?.id || null;
+    const printerToUse = this.selectedPrinterName || undefined;
 
     try {
       // Step 4: Call backend API to get TSPL commands
@@ -376,8 +408,8 @@ export class GenerateBarcodeComponent implements OnInit {
             console.log('✅ TSPL commands received from backend');
             console.log(`📄 TSPL length: ${tsplCommands.length} characters`);
 
-            // Step 5 & 6: Send TSPL to QZ Tray → QZ Tray prints directly
-            await this.qzTrayService.printTSPL(tsplCommands);
+            // Step 5 & 6: Send TSPL to selected printer via QZ Tray
+            await this.qzTrayService.printTSPL(tsplCommands, printerToUse);
             
             this.loading = false;
             this.successMessage = '✅ Labels printed successfully via QZ Tray!';
@@ -410,7 +442,7 @@ export class GenerateBarcodeComponent implements OnInit {
           if (tsplCommands && tsplCommands.trim().length > 0) {
             try {
               console.log('⚠️ Got TSPL from error response, attempting to print...');
-              await this.qzTrayService.printTSPL(tsplCommands);
+              await this.qzTrayService.printTSPL(tsplCommands, printerToUse);
               this.loading = false;
               this.successMessage = '✅ Labels printed successfully via QZ Tray!';
               this.errorMessage = '';

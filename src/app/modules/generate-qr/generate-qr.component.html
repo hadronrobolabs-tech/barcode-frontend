@@ -152,6 +152,18 @@
           {{ barcode.barcode_value || barcode }}
         </mat-chip>
       </div>
+      <div *ngIf="generatedBarcodes.length > 0" class="printer-select-row">
+        <span class="printer-label">Direct print to:</span>
+        <mat-form-field appearance="outline" class="printer-field">
+          <mat-label>Printer</mat-label>
+          <mat-select [(ngModel)]="selectedPrinterName" [disabled]="loadingPrinters">
+            <mat-option *ngFor="let p of availablePrinters" [value]="p">{{ p }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <button mat-stroked-button type="button" (click)="loadPrinters()" [disabled]="loadingPrinters" title="Refresh printer list">
+          {{ loadingPrinters ? 'Loading...' : 'Refresh printers' }}
+        </button>
+      </div>
       <div class="action-buttons">
           <button 
             mat-raised-button 
@@ -169,7 +181,7 @@
             (click)="directPrint()" 
             [disabled]="loading"
             class="direct-print-btn"
-            title="Direct Print via QZ Tray - Requires QZ Tray installed and running">
+            title="Direct Print via QZ Tray to selected printer">
             <mat-icon>print_disabled</mat-icon>
             <span>{{ loading ? 'Printing...' : 'Direct Print' }}</span>
           </button>
