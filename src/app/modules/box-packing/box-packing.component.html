@@ -90,6 +90,10 @@
     <mat-card-header>
       <mat-card-title>Kit Requirements</mat-card-title>
     </mat-card-header>
+    <div class="sub-component-hint">
+      <mat-icon>info</mat-icon>
+      <span>For kits with sub-components, scan them in <strong>Component Scan</strong> (parent then child, then Submit) before completing the box.</span>
+    </div>
     <mat-card-content>
       <table mat-table [dataSource]="requirementsDataSource" class="requirements-table">
         <ng-container matColumnDef="index">
