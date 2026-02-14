@@ -126,6 +126,14 @@ export class ComponentScanComponent implements AfterViewInit {
             });
           }
           
+          // VALIDATION: Sub-component cannot be scanned directly - parent must be scanned first
+          if (data.is_sub_component && !parentItem) {
+            this.errorMessage = 'Please scan the parent component first. Sub-component cannot be scanned directly.';
+            this.barcodeInput = '';
+            this.focusInput();
+            return;
+          }
+          
           // If this is a child barcode of a pending parent
           if (parentItem) {
             // Initialize scannedChildComponents array if not exists
